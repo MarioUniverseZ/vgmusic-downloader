@@ -10,11 +10,12 @@ import concurrent
 from queue import Queue
 from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
+from requests.models import Response
 
 class VGMDownloader():
     def __init__(self, url):
         self.url = url
-        self.executor = ThreadPoolExecutor(max_workers=10)
+        self.executor = ThreadPoolExecutor(max_workers=20)
 
     def get_album_page(self):
         """
@@ -151,6 +152,21 @@ class VGMDownloader():
         """
         return list(dict.fromkeys(lst))
 
+    def parallel_download(self, res: Response, title: str, filename: str, *album_image):
+        try:
+            if album_image:
+                with open(f"{title}/albumImage/{filename}", "wb") as f:
+                    f.write(res.content)
+                    print(f"album image downloaded to {title}/albumImage/{filename}")
+            else:
+                with open(f"{title}/{filename}", "wb") as f:
+                    f.write(res.content)
+                    print(f"audio downloaded to {title}/{filename}")
+        except ConnectionResetError:
+            print("Connection reset by peer")
+            exit()
+
+
     def download(self, decision: str, album_name: str):
         """
         download audio
@@ -177,25 +193,20 @@ class VGMDownloader():
                 if album_image:
                     res = [self.executor.submit(req.get, element) for element in album_image]
                     concurrent.futures.wait(res)
-                    for index, element in enumerate(album_image):
-                        response = res[index].result()
-                        if response.status_code == 200:
-                            filename = self.get_filename(element)
-                            with open(title + "/albumImage/" + filename, 'wb') as f:
-                                f.write(response.content)
-                            print(f"{title}/albumImage/{filename} downloaded")
+                    filename = [self.get_filename(element) for element in album_image]
+                    dow = [self.executor.submit(self.parallel_download, res[index].result(), title, filename[index], album_image) for index in range(len(album_image))]
+                    concurrent.futures.wait(dow)
+                    sleep(2)
 
                 # download audio
                 if target_format:
                     res = [self.executor.submit(req.get, element) for element in target_format]
                     concurrent.futures.wait(res)
-                    for index, element in enumerate(target_format):
-                        response = res[index].result()
-                        if response.status_code == 200:
-                            filename = self.get_filename(element)
-                            with open(f"{title}/{filename}", "wb") as o:
-                                o.write(response.content)
-                            print(f"{title}/{filename} downloaded")
+                    filename = [self.get_filename(element) for element in target_format]
+                    dow = [self.executor.submit(self.parallel_download, res[index].result(), title, filename[index]) for index in range(len(target_format))]
+                    concurrent.futures.wait(dow)
+                    sleep(2)
+                
                 return
 
             except RequestException:
