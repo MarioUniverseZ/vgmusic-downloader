@@ -1,16 +1,15 @@
 # vgmusic-downloader
 automatically download all songs in an album at once from downloads.khinsider.com
+![image](https://github.com/user-attachments/assets/d0fddac1-911a-4db9-b3da-8747b2ad1cae)
 
 # Usage
-1. Install Python and add into system variables
-2. Install Packages
-   ```
-   pip install requests beautifulsoup4
-   ```
-3. Clone this repository
-4. Run cmd through the repository path and the following command
-   ```
-   python main.py
-   ```
-5. Paste an album url from downloads.khinsider.com and hit Enter
-6. (Optional) If you want to download the album with the specific audio format, manually input the audio type(defaulting to MP3 if not specified)
+1. Input an album page from the website
+2. Click the Send Request button
+3. Choose the audio format
+4. Download
+5. Done
+
+# Plan
+- [ ] Better decoration
+- [ ] Able to view spectrograms
+- [ ] Able to download multiple audio formats at once
