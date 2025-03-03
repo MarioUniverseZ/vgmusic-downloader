@@ -7,6 +7,7 @@ class Window(tk.Tk):
         super().__init__()
         self.title("VGM Downloader")
         self.geometry("600x240")
+        self.iconbitmap("icon.ico")
         self.resizable(False, False)
         self.url = tk.StringVar()
         self.download_info = tk.StringVar()
@@ -40,8 +41,8 @@ class Window(tk.Tk):
                 self.download_label.place(x=15, y=210)
         
         def download_audio():
-            audio_type = '1' if selected_format.get() == "mp3" else ('2' if selected_format.get() == "flac" else '3')
-            self.vgm_downloader.download(audio_type, self.title, self.album_image, self.audio_format)
+            audio_type = '1' if selected_format.get() == "mp3" and self.mp3['state'] == "normal" else('2' if selected_format.get() == "flac" and self.flac['state'] == "normal" else '3')
+            self.vgm_downloader.download(audio_type, self.title, self.album_image, *self.audio_format)
 
             messagebox.showinfo("info", "Download Complete")
             self.download_info.set("")

@@ -8,7 +8,6 @@ from urllib.parse import unquote
 import threading
 import concurrent
 from queue import Queue
-# from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
 from requests.models import Response
 
@@ -164,7 +163,7 @@ class VGMDownloader():
             exit()
 
 
-    def download(self, decision: str, title: str, album_image: list, audio_format: tuple):
+    def download(self, decision: str, title: str, album_image: list, *audio_format: tuple):
         """
         download audio
         """
@@ -175,14 +174,8 @@ class VGMDownloader():
             os.mkdir(title + "/albumImage")
 
         while True:
-            target_format = audio_format[0] if decision == '1' else (audio_format[1] if decision == '2' else audio_format[2])
             try:
-                if decision == '1' and not audio_format[0]:
-                    print("no mp3 audio found, choosing flac audio instead")
-                    target_format = audio_format[1]
-                elif  decision == '2' and not audio_format[1]:
-                    print("no flac audio found, choosing mp3 audio instead")
-                    target_format = audio_format[0]
+                target_format = audio_format[0] if decision == '1' else (audio_format[1] if decision == '2' else audio_format[2])
 
                 print("downloading...(this may take a while)")
 
@@ -203,14 +196,12 @@ class VGMDownloader():
                     dow = [self.executor.submit(self.parallel_download, res[index].result(), title, filename[index]) for index in range(len(target_format))]
                     concurrent.futures.wait(dow)
                     sleep(2)
-                else:
-                    raise("This audio format is not available! Maybe you selected the wrong one")
-                
                 return
 
             except RequestException:
                 sleep(5)
                 continue
+                
 
 if __name__ == '__main__':
     url = input('Enter URL: ')
@@ -225,6 +216,6 @@ if __name__ == '__main__':
     print(f"retrieved every single audio urls in {time() - start:.2f}s" + "\n")
 
     audio_type = res.get_audio_choice()
-    res.download(audio_type, title, album_image, audio_format)
+    res.download(audio_type, title, album_image, *audio_format)
 
     print(f"Finished downloading. Total time: {time() - start:.2f}s")
