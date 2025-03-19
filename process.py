@@ -7,13 +7,14 @@ from bs4 import BeautifulSoup as bs
 from urllib.parse import unquote
 import threading
 import concurrent
+from tkinter import messagebox
 from queue import Queue
-# from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
 from requests.models import Response
 
 class VGMDownloader():
     def __init__(self, url: str):
+        super().__init__()
         self.url = url
         self.executor = ThreadPoolExecutor(max_workers=20)
 
@@ -27,7 +28,7 @@ class VGMDownloader():
             soup = bs(res_album_page.text, 'lxml')
             return soup
         except RequestException:
-            print("page temporarily unavailable")
+            messagebox.showerror("Error", "page temporarily unavailable")
     
     def get_album_image(self, soup: bs):
         """
@@ -35,7 +36,6 @@ class VGMDownloader():
         """
         while True:
             try:
-                print("getting album title...")
                 text = soup.find_all("div", class_="albumImage")
                 title = re.sub(r'[\\/*?:"<>|]', "", soup.find("h2").get_text()) #remove invalid characters ans pass this to create folder later on
                 print(f"album title: {title}" + "\n")
@@ -164,7 +164,7 @@ class VGMDownloader():
             exit()
 
 
-    def download(self, decision: str, title: str, album_image: list, audio_format: tuple):
+    def download(self, decision: str, title: str, album_image: list, *audio_format: tuple):
         """
         download audio
         """
@@ -175,14 +175,8 @@ class VGMDownloader():
             os.mkdir(title + "/albumImage")
 
         while True:
-            target_format = audio_format[0] if decision == '1' else (audio_format[1] if decision == '2' else audio_format[2])
             try:
-                if decision == '1' and not audio_format[0]:
-                    print("no mp3 audio found, choosing flac audio instead")
-                    target_format = audio_format[1]
-                elif  decision == '2' and not audio_format[1]:
-                    print("no flac audio found, choosing mp3 audio instead")
-                    target_format = audio_format[0]
+                target_format = audio_format[0] if decision == '1' else (audio_format[1] if decision == '2' else audio_format[2])
 
                 print("downloading...(this may take a while)")
 
@@ -203,14 +197,19 @@ class VGMDownloader():
                     dow = [self.executor.submit(self.parallel_download, res[index].result(), title, filename[index]) for index in range(len(target_format))]
                     concurrent.futures.wait(dow)
                     sleep(2)
-                else:
-                    raise("This audio format is not available! Maybe you selected the wrong one")
-                
+
+                    # create a .m3u8 playlist
+                    with open(f"{title}/playlist.m3u8", "w", encoding="utf-8-sig") as f:
+                        f.write("#EXTM3U\n")
+                        for element in filename:
+                            f.write(f"{element}\n")
+
                 return
 
             except RequestException:
                 sleep(5)
                 continue
+                
 
 if __name__ == '__main__':
     url = input('Enter URL: ')
@@ -225,6 +224,6 @@ if __name__ == '__main__':
     print(f"retrieved every single audio urls in {time() - start:.2f}s" + "\n")
 
     audio_type = res.get_audio_choice()
-    res.download(audio_type, title, album_image, audio_format)
+    res.download(audio_type, title, album_image, *audio_format)
 
     print(f"Finished downloading. Total time: {time() - start:.2f}s")
