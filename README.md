@@ -9,6 +9,11 @@ automatically download all songs in an album at once from downloads.khinsider.co
 4. Download
 5. Done
 
+# Develop
+- Python 3.12
+- Clone repo
+- run main.py
+
 # Plan
 - [ ] Better decoration
 - [ ] Able to view spectrograms
