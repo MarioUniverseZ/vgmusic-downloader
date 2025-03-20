@@ -7,12 +7,14 @@ from bs4 import BeautifulSoup as bs
 from urllib.parse import unquote
 import threading
 import concurrent
+from tkinter import messagebox
 from queue import Queue
 from concurrent.futures import ThreadPoolExecutor
 from requests.models import Response
 
 class VGMDownloader():
     def __init__(self, url: str):
+        super().__init__()
         self.url = url
         self.executor = ThreadPoolExecutor(max_workers=20)
 
@@ -26,7 +28,7 @@ class VGMDownloader():
             soup = bs(res_album_page.text, 'lxml')
             return soup
         except RequestException:
-            print("page temporarily unavailable")
+            messagebox.showerror("Error", "page temporarily unavailable")
     
     def get_album_image(self, soup: bs):
         """
@@ -34,7 +36,6 @@ class VGMDownloader():
         """
         while True:
             try:
-                print("getting album title...")
                 text = soup.find_all("div", class_="albumImage")
                 title = re.sub(r'[\\/*?:"<>|]', "", soup.find("h2").get_text()) #remove invalid characters ans pass this to create folder later on
                 print(f"album title: {title}" + "\n")
@@ -196,6 +197,14 @@ class VGMDownloader():
                     dow = [self.executor.submit(self.parallel_download, res[index].result(), title, filename[index]) for index in range(len(target_format))]
                     concurrent.futures.wait(dow)
                     sleep(2)
+
+
+                    # create a .m3u8 playlist
+                    with open(f"{title}/playlist.m3u8", "w", encoding="utf-8-sig") as f:
+                        f.write("#EXTM3U\n")
+                        for element in filename:
+                            f.write(f"{element}\n")
+
                 return
 
             except RequestException:
