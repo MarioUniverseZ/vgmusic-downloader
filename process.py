@@ -198,6 +198,7 @@ class VGMDownloader():
                     concurrent.futures.wait(dow)
                     sleep(2)
 
+
                     # create a .m3u8 playlist
                     with open(f"{title}/playlist.m3u8", "w", encoding="utf-8-sig") as f:
                         f.write("#EXTM3U\n")
