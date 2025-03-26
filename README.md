@@ -12,6 +12,10 @@ automatically download all songs in an album at once from downloads.khinsider.co
 # Develop
 - Python 3.12
 - Clone repo
+- Install packages
+    ```
+    pip install beautifulsoup4 requests
+    ```
 - run main.py
 
 # Plan

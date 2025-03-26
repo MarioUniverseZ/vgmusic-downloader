@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import messagebox
 from process import VGMDownloader
 from requests.exceptions import RequestException
+from tkinter.filedialog import askdirectory
+from configparser import ConfigParser
 import threading
 
 class Window(tk.Tk):
@@ -13,7 +15,10 @@ class Window(tk.Tk):
         self.resizable(False, False)
         self.url = tk.StringVar()
         self.download_info = tk.StringVar()
-        self.download_info.set("※Takes time when retrieving album information")
+
+        self.config = ConfigParser()
+        has_ini = self.config.read("config.ini")
+        self.path = self.config.get("DEFAULT", "path") if has_ini else ""
 
     def button(self):
         def send_request():
@@ -34,9 +39,20 @@ class Window(tk.Tk):
         
         def download_audio():
             if self.selected_format.get():
-                thread = threading.Thread(target=self.process_download)
-                thread.daemon = True
-                thread.start()
+                global target_dir
+                if self.path:
+                    target_dir = askdirectory(title="Select Directory", initialdir=self.path)
+                else:
+                    target_dir = askdirectory(title="Select Directory")
+                if target_dir:
+                    self.config['DEFAULT']['path'] = target_dir
+                    with open('config.ini', 'w') as configfile:
+                        self.config.write(configfile)
+                    thread = threading.Thread(target=self.process_download)
+                    thread.daemon = True
+                    thread.start()
+                else:
+                    messagebox.showerror("Error", "Please select a directory")
             else:
                 messagebox.showerror("Error", "Please select an audio format")
 
@@ -87,15 +103,17 @@ class Window(tk.Tk):
         self.mp3.deselect()
         self.flac.deselect()
         self.ogg.deselect()
-        formats_frame.pack(pady=100)
+        formats_frame.pack(pady=(110,0))
         # download button
+        self.download_text = tk.StringVar()
+        self.download_text.set("Download")
         self.download_btn = tk.Button(self,
-                                  text="Download",
                                   font=("Arial", 16),
                                   command=download_audio,
+                                  textvariable=self.download_text,
                                   state="disabled"
                                   )
-        self.download_btn.place(x=250, y=150)
+        self.download_btn.pack(pady=(10,0))
 
     def process_request(self):
         try:
@@ -141,6 +159,8 @@ class Window(tk.Tk):
             self.ogg.config(state="normal")
             
         self.download_info.set("※URLs retrieved")
+        self.url_entry.config(state="normal")
+        self.clear.config(state="normal")
         
         if self.mp3['state'] == self.flac['state'] == self.ogg['state'] == "disabled":
             messagebox.showerror("Error", "No audio format available")
@@ -154,13 +174,15 @@ class Window(tk.Tk):
             audio_type = '1' if self.selected_format.get() == "mp3" and self.mp3['state'] == "normal" else('2' if self.selected_format.get() == "flac" and self.flac['state'] == "normal" else '3')
             self.download_info.set("※Downloading...(this may take a while)")
             self.disable_btn()
+            self.title = f'{target_dir}\\{self.title}'
+            self.download_text.set("Downloading...")
             self.vgm_downloader.download(audio_type, self.title, self.album_image, *self.audio_format)
 
             messagebox.showinfo("info", "Download Complete")
             self.download_info.set("")
             self.clear_entry()
-        else:
-            messagebox.showerror("Error", "Please select an audio format")
+            self.download_text.set("Download")
+            self.url_entry.config(state="normal")
 
     def entry(self):
         self.url_entry = tk.Entry(self,
@@ -180,6 +202,7 @@ class Window(tk.Tk):
         
     def clear_entry(self):
         self.url.set("")
+        self.download_info.set("")
         self.mp3.config(state="disabled")
         self.flac.config(state="disabled")
         self.ogg.config(state="disabled")
@@ -195,3 +218,7 @@ class Window(tk.Tk):
         self.send_btn.config(state="disabled")
         self.download_btn.config(state="disabled")
         self.clear.config(state="disabled")
+        self.url_entry.config(state="disabled")
+        self.mp3.config(state="disabled")
+        self.flac.config(state="disabled")
+        self.ogg.config(state="disabled")
