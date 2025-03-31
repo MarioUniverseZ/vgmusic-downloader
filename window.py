@@ -1,9 +1,11 @@
 import tkinter as tk
+import os
 from tkinter import messagebox
 from process import VGMDownloader
 from requests.exceptions import RequestException
 from tkinter.filedialog import askdirectory
 from configparser import ConfigParser
+from spectrogram import Spectrogram
 import threading
 
 class Window(tk.Tk):
@@ -15,10 +17,18 @@ class Window(tk.Tk):
         self.resizable(False, False)
         self.url = tk.StringVar()
         self.download_info = tk.StringVar()
+        self.spectrogram = Spectrogram(self, window_title="Spectrogram")
 
         self.config = ConfigParser()
         has_ini = self.config.read("config.ini")
         self.path = self.config.get("DEFAULT", "path") if has_ini else ""
+
+        self.protocol("WM_DELETE_WINDOW", self.close)
+
+    def close(self):
+        if os.path.isfile("temp.png"):
+            os.remove("temp.png")
+        self.quit()
 
     def button(self):
         def send_request():
@@ -118,8 +128,12 @@ class Window(tk.Tk):
     def process_request(self):
         try:
             if self.url.get() and self.url.get().startswith("https://downloads.khinsider.com/"):
+                if os.path.isfile("temp.png"):
+                    os.remove("temp.png")
                 self.vgm_downloader = VGMDownloader(self.url.get())
 
+                self.spectrogram.wm_state("withdrawn")
+                self.view_spectrogram.place_forget()
                 self.disable_btn()
                 
                 # Update UI from main thread
@@ -165,9 +179,15 @@ class Window(tk.Tk):
         if self.mp3['state'] == self.flac['state'] == self.ogg['state'] == "disabled":
             messagebox.showerror("Error", "No audio format available")
             self.clear_entry()
-            
-        # Re-enable the send button
-        self.send_btn.config(state="normal")
+        else:
+            # Re-enable the send button
+            self.send_btn.config(state="normal")
+
+            self.view_spectrogram.place(x=10, y=80)
+            self.view_spectrogram.bind("<Button-1>", lambda e: self.open_spectrogram())
+
+    def open_spectrogram(self):
+        self.spectrogram.main()
 
     def process_download(self):
         if self.selected_format.get():
@@ -183,6 +203,8 @@ class Window(tk.Tk):
             self.clear_entry()
             self.download_text.set("Download")
             self.url_entry.config(state="normal")
+            self.view_spectrogram.place_forget()
+            self.spectrogram.callback()
 
     def entry(self):
         self.url_entry = tk.Entry(self,
@@ -199,6 +221,13 @@ class Window(tk.Tk):
                                        font=("Arial", 12),
                                        )
         self.download_label.pack(side="bottom")
+
+        self.view_spectrogram = tk.Label(self,
+                                         text="View Spectrogram(New Window)",
+                                         font=("Arial", 10),
+                                         foreground="blue",
+                                         underline=0
+                                         )
         
     def clear_entry(self):
         self.url.set("")
@@ -213,6 +242,7 @@ class Window(tk.Tk):
         self.clear.config(state="normal")
         self.send_btn.config(state="normal")
         self.url_entry.delete(0, tk.END)
+        self.view_spectrogram.place_forget()
 
     def disable_btn(self):
         self.send_btn.config(state="disabled")

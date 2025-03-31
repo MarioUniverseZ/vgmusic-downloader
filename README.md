@@ -10,15 +10,15 @@ automatically download all songs in an album at once from downloads.khinsider.co
 5. Done
 
 # Develop
-- Python 3.12
-- Clone repo
-- Install packages
+1. Make sure you have Python 3.12 istalled
+2. Clone repo
+3. Install packages
     ```
-    pip install beautifulsoup4 requests
+    pip install -r requirements.txt
     ```
-- run main.py
+4. run/debug main.py
 
 # Plan
 - [ ] Better decoration
-- [ ] Able to view spectrograms
+- [ ] Able to view spectrograms (load all atm so it's not recommended to try this with big album)
 - [ ] Able to download multiple audio formats at once
